@@ -1,0 +1,186 @@
+#!/bin/sh
+
+# Init script for the ut2004 dedicated linux server
+#
+# Usage	   : ut2004-dedicated {start|stop|restart|status}
+# Requires : start-stop-daemon
+# Author   : Tasos Latsas <tlatsas2000 _at_ gmail _dot_ com>
+
+# Point UT_DIR in your ut2004 System folder 
+UT_DIR="/usr/local/games/ut2004-ded/System/"
+
+# 64-bit users: uncomment ucc-bin-linux-amd64 and comment out ucc-bin
+# UT_BIN="ucc-bin-linux-amd64"
+UT_BIN="ucc-bin"
+
+INI="UT2004.ini"
+LOG="UT2004.log"
+# server parameters incl. a default map & game with no mutator
+UT_ARGS="server ONS-Torlan?game=Onslaught.ONSOnslaughtGame ini=${INI} log=${LOG} -nohomedir"
+
+UT_USER="games"
+UT_GROUP="games"
+USERGROUP="${UT_USER}:${UT_GROUP}"
+PIDFILE="/var/run/ut2004/ut2004-ded.pid"
+
+
+get_status()
+{
+	# function exit codes:
+	#	0 : server up
+	#	1 : server down
+
+	# if ps return 0 then process is running
+	ps -C "$UT_BIN" > /dev/null 2>&1
+	if [ $? -eq 0 ]; then
+		return 0
+	else
+		return 1
+	fi
+}
+
+do_start()
+{
+	# function exit codes:
+	#	0 : server started successfuly
+	#	1 : server instance already running
+	#	2 : error
+
+	# make folder for pid file
+	mkdir -p /var/run/ut2004/
+	chmod 775 /var/run/ut2004/
+	chown $USERGROUP /var/run/ut2004/
+
+	# check if server is already running
+	get_status
+	if [ $? -eq 0 ]; then
+		return 1
+	fi
+
+	# if not start the server
+	start-stop-daemon --start --quiet --make-pidfile --pidfile $PIDFILE --chuid $USERGROUP --chdir $UT_DIR \
+					  --exec ${UT_DIR}${UT_BIN} -- $UT_ARGS > /dev/null 2>&1 &
+
+	# check for errors
+	if [ $? -eq 1 ]; then
+		return 2
+	fi
+
+	# return success
+	return 0
+}
+
+do_stop()
+{
+	# function exit codes:
+	#	0 : server stoped successfuly
+	#	1 : server is down
+	#	2 : error
+
+	start-stop-daemon --stop --quiet --retry=TERM/30/KILL/5 --pidfile $PIDFILE > /dev/null 2>&1
+
+	# if there was an error check what went wrong
+	if [ $? -eq 1 ]; then
+		# get status to see if server is down
+		get_status
+		if [ $? -eq 1 ]; then
+			return 1
+		else
+			# return generic error
+			return 2
+		fi
+	fi
+	# return success
+	return 0
+}
+
+# detailed functions with msgs
+
+ut_start()
+{
+	echo -n "Starting ut2004 dedicated server..."
+
+	do_start
+
+	if [ "$?" -eq 0 ]; then
+		echo "done"
+	else
+		if [ "$?" -eq 1 ]; then
+			echo "failed"
+			echo "ut2004 server already running"
+			exit 1
+		else
+			echo "failed"
+			exit 1
+		fi
+	fi
+}
+
+ut_stop()
+{
+	echo -n "Stoping ut2004 dedicated server..."
+
+	do_stop
+
+	if [ "$?" -eq 0 ]; then
+		echo "done"
+	else
+		if [ "$?" -eq 1 ]; then
+			echo "failed"
+			echo "ut2004 server is not running"
+			exit 1
+		else
+			echo "failed"
+			exit 1
+		fi
+	fi
+}
+
+ut_restart()
+{
+	ut_stop
+	sleep 1
+	ut_start
+}
+
+# check for path and binary
+if [ ! -d "$UT_DIR" ]; then
+	echo "Server directory not found."
+    echo "Check the UT_DIR variable and/or your installation"
+	exit 1
+fi
+
+cd $UT_DIR
+
+if [ ! -x "$UT_BIN" ]; then
+	echo "Server binary not found or not executable."
+    echo "Check your tue UT_BIN variable and/or your installation"
+	exit 1
+fi
+
+case "$1" in
+	'start'|"")	ut_start ;;
+
+	'stop')		ut_stop ;;
+
+	'restart')	ut_restart ;;
+
+	'status')
+		get_status
+
+		if [ "$?" -eq 0 ]; then
+			echo "ut2004 server is up and running"
+	    	echo "PID = "`cat "$PIDFILE"`
+		else
+			echo "ut2004 server is down"
+		fi
+    ;;
+
+    *)
+		echo "Usage : $0 {start|stop|restart|status}"
+		exit 1
+	;;
+esac
+
+exit 0
+

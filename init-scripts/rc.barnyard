@@ -1,0 +1,160 @@
+#!/bin/sh
+#
+# Barnyard service script for Slakware
+#
+# Usage  : rc.barnyard {start | stop | restart | status}
+# Author : Tasos Latsas
+
+BARNYARD=`which barnyard`
+BARNBIN=`basename ${BARNYARD}`
+BOOKMARK="/var/log/snort/barnyard.waldo"
+SPOOLDIR="/var/log/snort"
+BASEFILENAME="snort.log"
+ARCHIVE="/var/log/snort/archive"
+CONF="/etc/barnyard.conf"
+PIDFILE="/var/run/barnyard.pid"
+
+get_status()
+{
+	# exit codes
+        #	0 : barnyard is up
+	#       1 : barnyard is down
+
+	ps -C "${BARNBIN}" > /dev/null 2>&1
+	if [ $? -eq 0 ]; then
+		return 0
+	else
+		return 1
+	fi
+}
+
+do_start()
+{
+	# exit codes
+	#       0 : barnyard started
+	#       1 : barnyard already running
+	#       2 : error
+
+	get_status
+        if [ $? -eq 0 ]; then
+		return 1
+	fi
+
+	# Remove the PID file if exists
+	if [ -f ${PIDFILE} ]; then
+		rm -f ${PIDFILE}
+	fi
+	
+	# Start barnyard
+	${BARNYARD} -c ${CONF} \
+	            -d ${SPOOLDIR} \
+			    -f ${BASEFILENAME} \
+			    -w ${BOOKMARK} \
+			    -a ${ARCHIVE} \
+			    -X ${PIDFILE} > /dev/null 2>&1
+
+
+        if [ $? -eq 1 ]; then
+		return 2
+	fi
+
+	# return success
+	return 0
+}
+
+do_stop()
+{
+        # exit codes
+        #       0 : barnyard is stopped
+        #       1 : barnyard is not running
+        #       2 : error
+
+        # check if down
+        get_status
+        if [ $? -eq 1 ]; then
+                return 1
+        fi
+
+        # stop barnyard
+        killall -KILL ${BARNBIN} > /dev/null 2>&1
+
+        sleep 2
+        get_status
+        if [ $? -eq 1 ]; then
+                rm -f ${PIDFILE}
+        else
+                return 2
+        fi
+
+        # return success
+        return 0;
+}
+
+barnyard_start()
+{
+	# Start barnyard
+        echo -n "Starting barnyard spool reader..."
+        do_start
+        if [ $? -eq 0 ]; then
+                echo "done"
+                return 0
+        else
+                echo "failed"
+                if [ $? -eq 1 ]; then
+                        echo "Barnyard is already running"
+                        exit 1
+                else
+                        exit 1
+                fi
+        fi
+}
+
+barnyard_stop()
+{
+        echo -n "Stopping barnyard spool reader..."
+        do_stop
+        if [ $? -eq 0 ]; then
+                echo "done"
+                return 0
+        else
+                echo "failed"
+                if [ $? -eq 1 ]; then
+                        echo "Barnyard is not running"
+                        exit 1
+                else
+                        exit 1
+                fi
+        fi
+        return 0
+}
+
+# check if barnyard exists and is executable
+test -x ${BARNYARD} || exit 1
+
+case "$1" in
+	'start'|' ')
+		barnyard_start
+	;;
+	'stop')
+		barnyard_stop
+	;;
+	'restart')
+		barnyard_stop
+		sleep 2
+		barnyard_start
+	;;
+	'status')
+		get_status
+		if [ "$?" -eq 0 ]; then
+			echo "Barnyard spool reader is running"
+			echo "PID = "`cat "$PIDFILE"`
+		else
+			echo "Barnyard is down"
+		fi
+	;;
+	*)
+		echo "usage $0 {start|stop|restart|status}"
+		exit 1
+	;;
+esac
+

@@ -1,0 +1,206 @@
+#!/bin/sh
+
+# Chillispot service script for Slackware Linux
+#
+# Usage  : chillispot {start | startdebug | stop | restart | status}
+#
+# Author : Tasos Latsas
+
+
+#--[ config ]----------------------------------------------
+MODPROBE=`which modprobe`
+CHILLI_DIR="/usr/sbin/"
+CHILLI_BIN="chilli"
+CHILLI_CONF="/etc/chilli.conf"
+
+PIDFILE="/var/run/${CHILLI_BIN}.pid"
+ARGS="--conf ${CHILLI_CONF}"
+DEBUGFLAG="NO"
+DEBUG="--fg --debug"
+
+#--[ functions ]-------------------------------------------
+load_tun_module()
+{
+    $MODPROBE tun > /dev/null 2>&1
+}
+
+unload_tun_module()
+{
+    $MODPROBE -r tun > /dev/null 2>&1
+}
+
+get_status()
+{
+    # exit codes
+    #   0 : chillispot up
+    #   1 : chillispot down
+
+    ps -C "$CHILLI_BIN" > /dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+do_start()
+{
+    # exit codes
+    #   0 : chillispot started
+    #   1 : chillispot already running
+    #   2 : error
+    
+    # check if chillispot is already running
+    get_status
+    if [ $? -eq 0 ]; then
+        return 1
+    fi
+
+    # Remove the PID file if exists
+    if [ -f ${PIDFILE} ]; then
+        rm -f ${PIDFILE}
+    fi
+
+    # Load tun module
+    load_tun_module
+
+    if [ ${DEBUGFLAG} = "NO" ]; then
+        # start chillispot
+        ${CHILLI_DIR}${CHILLI_BIN} ${ARGS} 2>&1
+    else
+        # start chillispot in debug mode
+        ${CHILLI_DIR}${CHILLI_BIN} ${ARGS} ${DEBUG}
+    fi
+
+
+    if [ $? -eq 1 ]; then
+        return 2
+    fi
+
+    # return success
+    return 0
+}
+
+do_stop()
+{
+    # exit codes
+    #   0 : chillispot stopped
+    #   1 : chillispot is not running
+    #   2 : error
+
+    # check if chillispot is down
+    get_status
+    if [ $? -eq 1 ]; then
+        return 1
+    fi
+
+    # stop chillispot
+    killall -TERM ${CHILLI_BIN} > /dev/null 2>&1
+
+    sleep 2
+    # kill to make sure
+    killall -KILL ${CHILLI_BIN} > /dev/null 2>&1
+
+    sleep 1
+    get_status
+    if [ $? -eq 1 ]; then
+        rm -f ${PIDFILE}
+    else
+        return 2
+    fi
+
+    # unload kernel tun module
+    unload_tun_module
+
+    # return success
+    return 0;
+}
+
+chilli_start()
+{
+    echo -n "Starting chillispot captive portal..."
+    do_start
+    if [ $? -eq 0 ]; then
+        echo "done"
+        return 0
+    else
+        echo "failed"
+        if [ $? -eq 1 ]; then
+            echo "Chillispot already running"
+            exit 1
+        else
+            exit 1
+        fi
+    fi
+}
+
+chilli_stop()
+{
+    echo -n "Stopping chillispot captive portal..."
+    do_stop
+    if [ $? -eq 0 ]; then
+        echo "done"
+        return 0
+    else
+        echo "failed"
+        if [ $? -eq 1 ]; then
+            echo "Chillispot is not running"
+            exit 1
+        else
+            exit 1
+        fi
+    fi
+    return 0
+}
+
+chilli_restart()
+{
+    chilli_stop
+    sleep 1
+    chilli_start
+}
+
+#--[ main ]------------------------------------------------ 
+
+# Check if Chillispot is present
+if [ ! -x ${CHILLI_DIR}${CHILLI_BIN} ]; then
+    echo "Cannot find Chillispot captive portal."
+    echo "Check your path configuration or permissions."
+    exit 1
+fi
+
+case "$1" in
+    'start'|""|'startdebug')
+            if [ $1 = "startdebug" ]; then
+                DEBUGFLAG="YES"
+            fi
+            chilli_start
+            ;;
+
+    'stop') 
+            chilli_stop
+            ;;
+
+    'restart')
+            chilli_restart
+            ;;
+
+    'status')
+            get_status
+
+            if [ "$?" -eq 0 ]; then
+                echo "Chillispot captive portal is running."
+                echo "PID = "`cat "$PIDFILE"`
+            else
+                echo "Chillispot captive portal is down"
+            fi
+            ;;
+
+    *)
+            echo "Usage : $0 {start | startdebug | stop | restart | status}"
+            exit 1
+            ;;
+esac
+
+exit 0
+

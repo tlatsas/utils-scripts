@@ -1,0 +1,175 @@
+#!/bin/sh
+
+# Snort NIDS service script for Slackware
+#
+# Usage  : rc.snort {start | stop | restart | status}
+#
+# Author : Tasos Latsas
+
+INTERFACE="eth1"
+
+SNORT=`which snort`
+SNORT_BIN=`basename ${SNORT}`
+
+SNORT_USER="snort"
+SNORT_GROUP="snort"
+
+CONF_DIR="/etc/snort/"
+CONF="${CONF_DIR}snort.conf"
+EXCLUDES="${CONF_DIR}excludes.conf"
+
+PIDFILE="/var/run/snort.${INTERFACE}"
+
+get_status()
+{
+	# exit codes
+        #	0 : snort is up
+	#       1 : snort is down
+
+	ps -C "${SNORT_BIN}" > /dev/null 2>&1
+	if [ $? -eq 0 ]; then
+		return 0
+	else
+		return 1
+	fi
+}
+
+interface_up()
+{
+	if [ ! ifconfig ${INTERFACE} | grep "RUNNING" > /dev/null 2>&1 ]; then
+		echo -n "Bringing up interface ${INTERFACE}..."
+		ifconfig ${INTERFACE} up
+		echo "done"
+	fi
+}
+
+do_start()
+{
+	# exit codes
+	#       0 : snort started
+	#       1 : snort already running
+	#       2 : error
+
+	get_status
+        if [ $? -eq 0 ]; then
+		return 1
+	fi
+
+	# Remove the PID file if exists
+	if [ -f ${PIDFILE} ]; then
+		rm -f ${PIDFILE}
+	fi
+	
+	# Start snort
+	${SNORT} -u ${SNORT_USER} -g ${SNORT_GROUP} -i ${INTERFACE} \
+			       -c ${CONF} -D -F ${EXCLUDES}
+
+        if [ $? -eq 1 ]; then
+		return 2
+	fi
+
+	# return success
+	return 0
+}
+
+do_stop()
+{
+        # exit codes
+        #       0 : snort is stopped
+        #       1 : snort is not running
+        #       2 : error
+
+        # check if snort is down
+        get_status
+        if [ $? -eq 1 ]; then
+                return 1
+        fi
+
+        # stop snort
+        killall -KILL ${SNORT_BIN} > /dev/null 2>&1
+
+        sleep 2
+        get_status
+        if [ $? -eq 1 ]; then
+                rm -f ${PIDFILE}
+        else
+                return 2
+        fi
+
+        # return success
+        return 0;
+}
+
+snort_start()
+{
+	# If interface that snort listens is down bring it up
+	interface_up
+
+	# Start snort
+        echo -n "Starting Snort NIDS..."
+        do_start
+        if [ $? -eq 0 ]; then
+                echo "done"
+                return 0
+        else
+                echo "failed"
+                if [ $? -eq 1 ]; then
+                        echo "Snort already running"
+                        exit 1
+                else
+                        exit 1
+                fi
+        fi
+}
+
+snort_stop()
+{
+        echo -n "Stopping Snort NIDS..."
+        do_stop
+        if [ $? -eq 0 ]; then
+                echo "done"
+                return 0
+        else
+                echo "failed"
+                if [ $? -eq 1 ]; then
+                        echo "Snort is not running"
+                        exit 1
+                else
+                        exit 1
+                fi
+        fi
+        return 0
+}
+
+# Do some checks here..
+test -x ${SNORT} || exit 1
+cat /etc/passwd | grep ${USER} || exit 1
+cat /etc/group | grep ${GROUP} || exit 1
+
+case "$1" in
+	'start'|' ')
+		snort_start
+	;;
+	'stop')
+		snort_stop
+	;;
+	'restart')
+		snort_stop
+		sleep 3
+		snort_start
+	;;
+	'status')
+		get_status
+		if [ "$?" -eq 0 ]; then
+			echo "Snort NIDS is running"
+			echo "PID = "`cat "$PIDFILE"`
+		else
+			echo "Snort NIDS is down"
+		fi
+	;;
+	*)
+		echo "usage $0 {start|stop|restart|status}"
+		exit 1
+	;;
+esac
+
