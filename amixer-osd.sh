@@ -18,6 +18,7 @@ Increase/decrease/mute using alsa mixer and display notifications
   -h    Show this message
   -c    Alsa mixer channel (default: Master)
   -s    Step to increase/decrease volume (default: 5)
+  -d    Display notifications using libnotify (default: off)
 
 [up|down|toggle]
 Alsa mixer actions
@@ -28,11 +29,8 @@ Alsa mixer actions
 EOF
 }
 
-# utils
-_amixer=$(which amixer) || exit 1
-_notify=$(which notify-send) || exit 1
-
 # default values
+_display_notification=0
 _step=5
 _channel="Master"
 
@@ -40,11 +38,15 @@ _channel="Master"
 _time=1000
 _text="Volume Control"
 
-while getopts ":hc:s:" options; do
+
+while getopts ":hdc:s:" options; do
   case ${options} in
     h)
       show_help
       exit 0
+      ;;
+    d)
+      _display_notification=1
       ;;
     c)
       _channel=${OPTARG}
@@ -63,6 +65,11 @@ while getopts ":hc:s:" options; do
   esac
 done
 
+# utils
+_amixer=$(which amixer) || exit 1
+if [[ $_display_notification -eq 1 ]]; then
+    _notify=$(which notify-send) || exit 1
+fi
 _command="${@:$OPTIND}"
 
 # check for valid command
@@ -82,6 +89,8 @@ elif [ ${_command} == 'down' ]; then
 else
     ${_amixer} set ${_channel} ${_command}
 fi
+
+[[ $_display_notification -eq 0 ]] && exit 0
 
 # get channel status
 STATUS=$(${_amixer} sget ${_channel} | awk '/[0-9]*%/ { print $NF }' | uniq )
