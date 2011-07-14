@@ -5,15 +5,12 @@
 # prints filename, filetype, size
 # accepts multiple filename arguments
 
-# requires perl-file-which
-
 use strict;
 use warnings;
-use File::Which;
 
 our ($_file, $_du);
-$_file=which('file');
-$_du=which('du');
+$_file="/usr/bin/file";
+$_du="/bin/du";
 
 sub fileinfo {
     # set name
