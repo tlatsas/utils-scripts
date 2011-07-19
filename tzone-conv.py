@@ -77,9 +77,9 @@ converted_time = t.astimezone(timezone(args.to_tz))
 
 print "%s '%s' is : " % (args.from_tz, args.time),
 if args.show_date:
-    print converted_time.strftime("%H:%M%z (%Y-%m-%d)"),
+    print converted_time.strftime("%R%z (%x)"),
 else:
-    print converted_time.strftime("%H:%M%z"),
+    print converted_time.strftime("%R%z"),
 print " %s" % args.to_tz
 
 exit(0)
