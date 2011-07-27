@@ -1,6 +1,5 @@
 #!/bin/bash
 
-#_volstr=$(amixer sget Master,0 | grep -o -m 1 '[[:digit:]]*%' | tr -d '%')
 _volstr=$(amixer sget Master,0 | grep -m 1 '[[:digit:]]*%') > /dev/null
 _status=$(echo $_volstr | egrep -o -m 1 "\[on\]|\[off\]" | tr -d '[]')
 
