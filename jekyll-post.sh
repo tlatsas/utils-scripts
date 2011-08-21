@@ -28,4 +28,27 @@ date: $_datetime
 ---
 EOF
 
+echo 'File created successfully.'
+echo
+
+# prompt user to edit file
+if [[ -z ${EDITOR} ]]; then
+    echo 'EDITOR variable not set.'
+    echo -n 'Edit file? Type n/N to exit or enter the editor to use : '
+    read answer
+    if [[ "${answer}" == 'n' || "${answer}" == 'N' ]]; then
+        exit 0
+    else
+        ${answer} ${_post_file}
+    fi
+else
+    echo -n 'Edit file? [y/n]: '
+    read answer
+    if [[ "${answer}" == 'n'|| "${answer}" == 'N' ]]; then
+        exit 0
+    else
+        ${EDITOR} ${_post_file}
+    fi
+fi
+
 exit 0
