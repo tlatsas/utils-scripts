@@ -72,6 +72,12 @@ if [[ $_display_notification -eq 1 ]]; then
 fi
 _command="${@:$OPTIND}"
 
+# if no command supplied print current status
+if [[ -z ${_command} ]]; then
+    echo $(${_amixer} sget ${_channel} | grep -o -m 1 '[[:digit:]]*%' | tr -d '%')
+    exit 0
+fi
+
 # check for valid command
 if [[ ${_command} != 'up' && 
       ${_command} != 'down' && 
