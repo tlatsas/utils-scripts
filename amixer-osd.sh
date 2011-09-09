@@ -89,11 +89,11 @@ fi
 
 # run alsa command
 if [ ${_command} == 'up' ]; then
-    ${_amixer} set ${_channel} ${_step}+
+    ${_amixer} set ${_channel} ${_step}+ > /dev/null
 elif [ ${_command} == 'down' ]; then
-    ${_amixer} set ${_channel} ${_step}-
+    ${_amixer} set ${_channel} ${_step}- > /dev/null
 else
-    ${_amixer} set ${_channel} ${_command}
+    ${_amixer} set ${_channel} ${_command} > /dev/null
 fi
 
 [[ $_display_notification -eq 0 ]] && exit 0
