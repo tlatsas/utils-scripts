@@ -72,29 +72,26 @@ if [[ $_display_notification -eq 1 ]]; then
 fi
 _command="${@:$OPTIND}"
 
-# if no command supplied print current status
-if [[ -z ${_command} ]]; then
-    echo $(${_amixer} sget ${_channel} | grep -o -m 1 '[[:digit:]]*%' | tr -d '%')
-    exit 0
-fi
+case ${_command} in
+    "")
+        ;;
+    "up")
+        ${_amixer} set ${_channel} ${_step}+ > /dev/null
+        ;;
+    "down")
+        ${_amixer} set ${_channel} ${_step}- > /dev/null
+        ;;
+    "toggle")
+        ${_amixer} set ${_channel} ${_command} > /dev/null
+        ;;
+    *)
+        echo "Unknown command - use up, down, toggle"
+        echo "try -h for help"
+        exit 1
+        ;;
+esac
 
-# check for valid command
-if [[ ${_command} != 'up' && 
-      ${_command} != 'down' && 
-      ${_command} != 'toggle' ]]; then
-    echo "Unknown command - use up, down or toggle"
-    echo "try -h for help"
-    exit 1
-fi
-
-# run alsa command
-if [ ${_command} == 'up' ]; then
-    ${_amixer} set ${_channel} ${_step}+ > /dev/null
-elif [ ${_command} == 'down' ]; then
-    ${_amixer} set ${_channel} ${_step}- > /dev/null
-else
-    ${_amixer} set ${_channel} ${_command} > /dev/null
-fi
+echo $(${_amixer} sget ${_channel} | grep -o -m 1 '[[:digit:]]*%' | tr -d '%')
 
 [[ $_display_notification -eq 0 ]] && exit 0
 
