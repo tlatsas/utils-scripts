@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# play the smallest violin in the world
+# depends on ogg123
+
+_ogg=$(which ogg123) || exit 1
+_violin="${HOME}/.data/smallest_violin.ogg"
+
+if [[ ! -f "${_violin}" ]]; then
+    echo "Could not find smallest violin.. did you misplaced it?"
+    exit 1
+fi
+
+${_ogg} -q "${_violin}"
