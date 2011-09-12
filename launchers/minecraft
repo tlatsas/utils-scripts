@@ -1,0 +1,10 @@
+#!/bin/bash
+
+_java=$(which java)
+_mc="${HOME}/games/minecraft/minecraft.jar"
+
+${_java} -Xmx1024M -Xms512M -cp ${_mc} net.minecraft.LauncherFrame > /dev/null 2>&1 &
+
+# set cpu affinity
+#_pid=`echo $!`
+#taskset -p 0x00000001 $_pid
