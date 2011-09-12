@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# view youtube videos with mplayer
+# depends on mplayer and youtube-dl
+
+_mp=$(which mplayer) || exit 1
+_utube=$(which youtube-dl) || exit 1
+
+_cookies="/tmp/utube.cookie"
+_cache=1024
+
+# youtube video codes @ http://en.wikipedia.org/wiki/YouTube#Quality_and_codecs
+
+${_mp} -cache ${_cache} -framedrop -cookies -cookies-file ${_cookies} $(${_utube} -g --cookies ${_cookies} "$1")
