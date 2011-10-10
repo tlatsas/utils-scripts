@@ -133,22 +133,22 @@ fi
 # get channel status
 get_status ${_channel}
 if [[ $? -eq 1 ]]; then
-    VOLUME="Muted"
-    ICON="audio-volume-muted"
+    _vol="Muted"
+    _icon="audio-volume-muted"
 else
-    VOLUME=$(get_vol ${_channel})
-    if [[ $VOLUME -eq 0 ]]; then
-        ICON="audio-volume-off"
-    elif [[ $VOLUME -lt 33 ]]; then
-        ICON="audio-volume-low"
-    elif [[ $VOLUME -lt 66 ]]; then
-        ICON="audio-volume-medium"
+    _vol=$(get_vol ${_channel})
+    if [[ $_vol -eq 0 ]]; then
+        _icon="audio-volume-off"
+    elif [[ $_vol -lt 33 ]]; then
+        _icon="audio-volume-low"
+    elif [[ $_vol -lt 66 ]]; then
+        _icon="audio-volume-medium"
     else
-        ICON="audio-volume-high"
+        _icon="audio-volume-high"
     fi
-    VOLUME="${VOLUME}%"
+    _vol="${_vol}%"
 fi
 
-${_notify} "${_text}" "$VOLUME" -i $ICON -t ${_time}
+${_notify} "${_text}" "${_vol}" -i ${_icon} -t ${_time}
 
 exit 0
