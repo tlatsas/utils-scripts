@@ -30,11 +30,31 @@ Alsa mixer actions
 EOF
 }
 
+get_vol() {
+    # return volume levels 0 - 100
+    # parameter $1 - alsa channel
+    local _vol=$(${_amixer} sget ${1} | grep -o -m 1 '[[:digit:]]*%' | tr -d '%')
+    echo ${_vol}
+}
+
+get_status() {
+    # return the status of the channel
+    # parameter $1 - alsa channel
+    # return values:
+    #   0 - not muted
+    #   1 - muted
+    status=$(${_amixer} sget ${1} | awk '/[0-9]*%/ { print $NF }' | uniq )
+    [[ "${status}" == "[off]" ]] && return 1
+    return 0
+}
+
 # default values
 _display_notification=0
 _step=5
 _channel="Master"
 _quiet=0
+# string/char to display if channel is muted
+_chmute='∅'
 
 # notification values
 _time=1000
@@ -97,7 +117,15 @@ case ${_command} in
 esac
 
 if [[ $_quiet -eq 0 ]]; then
-    echo $(${_amixer} sget ${_channel} | grep -o -m 1 '[[:digit:]]*%' | tr -d '%')
+    # get channel volume
+    _vol=$(get_vol ${_channel})
+
+    # if mutted add mute char
+    get_status ${_channel}
+    if [[ $? -eq 1 ]]; then
+        _vol="${_vol} ${_chmute}"
+    fi
+    echo ${_vol}
 fi
 
 [[ $_display_notification -eq 0 ]] && exit 0
