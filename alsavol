@@ -132,7 +132,7 @@ fi
 
 # get channel status
 get_status ${_channel}
-if [ $? -eq 1 ]; then
+if [[ $? -eq 1 ]]; then
     VOLUME="Muted"
     ICON="audio-volume-muted"
 else
