@@ -131,13 +131,12 @@ fi
 [[ $_display_notification -eq 0 ]] && exit 0
 
 # get channel status
-STATUS=$(${_amixer} sget ${_channel} | awk '/[0-9]*%/ { print $NF }' | uniq )
-
-if [ $STATUS = '[off]' ]; then
+get_status ${_channel}
+if [ $? -eq 1 ]; then
     VOLUME="Muted"
     ICON="audio-volume-muted"
 else
-    VOLUME=$(${_amixer} sget ${_channel} | grep -o -m 1 '[[:digit:]]*%' | tr -d '%')
+    VOLUME=$(get_vol ${_channel})
     if [[ $VOLUME -eq 0 ]]; then
         ICON="audio-volume-off"
     elif [[ $VOLUME -lt 33 ]]; then
