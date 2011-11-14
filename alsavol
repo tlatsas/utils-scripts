@@ -54,7 +54,7 @@ _step=5
 _channel="Master"
 _quiet=0
 # string/char to display if channel is muted
-_chmute='∅'
+_chmute='✕'
 
 # notification values
 _time=1000
@@ -123,7 +123,7 @@ if [[ $_quiet -eq 0 ]]; then
     # if mutted add mute char
     get_status ${_channel}
     if [[ $? -eq 1 ]]; then
-        _vol="${_vol} ${_chmute}"
+        _vol="${_vol}${_chmute}"
     fi
     echo ${_vol}
 fi
