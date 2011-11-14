@@ -9,7 +9,7 @@
 
 show_help () {
 cat << EOF
-usage: $0 [OPTIONS] [up | down | toggle]
+usage: $(basename "$0") [OPTIONS] [up | down | toggle]
 
 Increase/decrease/mute using alsa mixer and display notifications
 

@@ -7,7 +7,7 @@
 
 show_help () {
 cat << EOF
-usage: $0 options
+usage: $(basename "$0") options
 
 This script removes pyc and pyo files from the given path.
 

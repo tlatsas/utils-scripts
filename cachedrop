@@ -41,7 +41,7 @@ case $LVL in
       ;;
 
   *)
-      echo "Usage: $0 [1|2|3]"
+      echo "Usage: $(basename $0) [1|2|3]"
       echo
       echo "   1     drop pagecache"
       echo "   2     drop dentries and inodes"

@@ -9,7 +9,7 @@
 
 show_help () {
 cat << EOF
-usage: $0 OPTIONS
+usage: $(basename "$0") OPTIONS
 
 Fix all permissions for files and directories in given path.
 
