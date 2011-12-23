@@ -1,0 +1,6 @@
+#!/bin/bash
+
+_bin="~/games/ut2004/ut2004"
+_aoss=$(which aoss) || exit 1
+
+$_aoss "$_bin" > /dev/null 2>&1
