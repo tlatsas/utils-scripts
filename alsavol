@@ -124,6 +124,8 @@ if [[ $_quiet -eq 0 ]]; then
     get_status ${_channel}
     if [[ $? -eq 1 ]]; then
         _vol="${_vol}${_chmute}"
+    else
+        _vol="${_vol}%"
     fi
     echo ${_vol}
 fi
