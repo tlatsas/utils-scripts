@@ -29,6 +29,6 @@ if [[ ! $url =~ youtu.be ]]; then
 fi
 
 # play
-${mp} −really−quiet -cache ${cache} \
+${mp} -really-quiet -cache ${cache} \
     -framedrop -cookies -cookies-file ${cookies} \
     $(${udl} -g --cookies ${cookies} "$url") > /dev/null 2>&1
