@@ -3,9 +3,9 @@
 # view youtube videos with mplayer
 # depends on mplayer,  youtube-dl and zenity
 
-mp=$(which mplayer) || exit 1
-udl=$(which youtube-dl) || exit 1
 zen=$(which zenity) || exit 1
+mp=$(which mplayer) || { $zen --error --text="Cannot locate mplayer binary."; exit 1; }
+udl=$(which youtube-dl) || { $zen --error --text="Cannot locate youtube-dl binary."; exit 1; }
 
 cookies="/tmp/utube.cookie"
 cache=1024
