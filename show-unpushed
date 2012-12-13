@@ -1,0 +1,44 @@
+#!/bin/sh
+
+# Show if a repository (current branch)
+# has local commits not pushed to remote
+#
+# Show for supplied repository. If supplied argument is not a
+# repository then iterate over containing folders to find one.
+
+cmd_help() {
+    echo "Usage: $0 [directory]"
+}
+
+is_repo() {
+    [[ -d "$1/.git" ]]
+    return $?
+}
+
+show_unpushed() {
+    dname=$(basename $1)
+    pushd $1 > /dev/null
+    branch=$(git branch --no-color | grep ^\* | cut -c 3-)
+    commits=$(git log --oneline origin/${branch}..HEAD | wc -l)
+
+    if [[ $commits -ne 0 ]]; then
+        echo "$dname is $commits local commits ahead"
+    fi
+    popd $1 > /dev/null
+}
+
+if [[ ! -d "$1" ]]; then
+    cmd_help
+    exit 1
+fi
+
+if is_repo $1; then
+    show_unpushed $1
+else
+    for d in $(find $1 -maxdepth 1 -type d); do
+        if is_repo $d; then
+            show_unpushed $d
+        fi
+    done
+fi
+
